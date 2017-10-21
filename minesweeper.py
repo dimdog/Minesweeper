@@ -63,14 +63,28 @@ class MineSweeper:
     def mark_cell(self, width, height):
         if not self.validate_cell(width, height):
             return False
-        self.grid[height][width].marked = True
+        self.grid[height][width].marked = not self.grid[height][width].marked
+        return True
 
     def pick_cell(self, width, height):
         if not self.validate_cell(width, height):
             return False
         self.game_over = self.grid[height][width].value == -1
         self.grid[height][width].revealed = True
+        if self.grid[height][width].value == 0:
+            self.reveal_surrounding_empty_cells(width, height)
         return not self.game_over
+
+    def reveal_surrounding_empty_cells(self, width, height):
+        """ the gist is that the cell at width, height is a 0, so lets reveal all the cells around it.
+        All the 0's it is touching get the same treatment """
+        for h in xrange(-1, 2):  # -1 to 1
+            for w in xrange(-1, 2):  # -1 to 1
+                if not (h == 0 and w == 0) and 0 <= height + h < len(self.grid) and 0 <= width + w < len(self.grid[0]):
+                    if self.grid[height + h][width + w].value == 0 and not self.grid[height + h][width + w].revealed:
+                        self.grid[height + h][width + w].revealed = True
+                        self.reveal_surrounding_empty_cells(width + w, height + h)
+                    self.grid[height + h][width + w].revealed = True
 
     def game_loop(self):
         while not self.game_over:

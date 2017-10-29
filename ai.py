@@ -1,3 +1,5 @@
+from random import Random
+random = Random()
 
 
 class MinesweeperAI:
@@ -9,7 +11,6 @@ class MinesweeperAI:
     def mark_cells(self):
         """ Marks any known bombs."""
         marked = False
-        print self.game.revealed
         for location in self.game.revealed:
             # location = (height, width)
             if location not in self.completed:  # if we've already done all we can with the spot
@@ -33,7 +34,14 @@ class MinesweeperAI:
 
     def reveal_cell(self):
         """ picks a cell to reveal """
-        revealed = False
+        mines_left = len(self.game.mines) - len(self.game.marked)
+        squares_left = len(self.game.hidden)
+        prob_per_square = float(mines_left) / float(squares_left)
+        print "Odds: Mines left:{} Unknown Squares:{}, liklihood / square:{}".format(mines_left, squares_left, prob_per_square * 100)
+        # best odds we can have - short of 0 - is a 1 surrounded by 9 unknowns. - an 11% chance
+        # random cell after picking first is 20% chance.
+        best_odds = prob_per_square  # this is before we start getting clever with adjacency
+        best_odds_location = None
         for location in self.game.revealed:
             # location = (height, width)
             if location not in self.completed:  # if we've already done all we can with the spot
@@ -48,8 +56,14 @@ class MinesweeperAI:
                 elif len(marked) == mines:
                     # time to reveal some cells...
                     return unknowns[0]
+                else:
+                    odds = float(mines - len(marked)) / float(len(unknowns))
+                    if odds < best_odds:
+                        best_odds = odds
+                        best_odds_location = unknowns[0]
+        # if we are here, then we are just guessing...
 
-        return revealed
+        return best_odds_location or list(self.game.hidden)[random.randint(0, len(self.game.hidden) - 1)]
 
     def check_info(self, location):
         # returns {"unknowns": set((height,width)), "marked": set((height,width))}

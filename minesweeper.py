@@ -23,6 +23,7 @@ class MineSweeper:
         self.grid = []
         self.mines = set()
         self.revealed = set()
+        self.hidden = set()
         self.marked = set()
         self.game_over = False
         self.height = height
@@ -38,6 +39,7 @@ class MineSweeper:
             grid_row = []
             for w in xrange(width):
                 grid_row.append(Cell(0))
+                self.hidden.add((h, w))
             self.grid.append(grid_row)
         while len(self.mines) < mines:
             mine_height = random.randint(0, height - 1)
@@ -50,7 +52,8 @@ class MineSweeper:
         self.grid[mine_height][mine_width].value = -1
         for h in xrange(-1, 2):  # -1 to 1
             for w in xrange(-1, 2):  # -1 to 1
-                if not (h == 0 and w == 0) and 0 <= mine_height + h < len(self.grid) and 0 <= mine_width + w < len(self.grid[0]):
+                if not (h == 0 and w == 0) and 0 <= mine_height + h < len(self.grid) and 0 <= mine_width + w < len(self.grid[0]) and \
+                        self.grid[mine_height + h][mine_width + w].value != -1:
                     self.grid[mine_height + h][mine_width + w].value += 1
         self.mines.add((mine_height, mine_width))
         return True
@@ -63,7 +66,7 @@ class MineSweeper:
         print "-" * 40
 
     def validate_cell(self, width, height):
-        if height < 0 or height > len(self.grid) or width < 0 or width > len(self.grid[height]):
+        if height < 0 or height >= len(self.grid) or width < 0 or width >= len(self.grid[height]):
             return False
         if self.game_over or self.grid[height][width].revealed:
             return False
@@ -74,6 +77,7 @@ class MineSweeper:
             return False
         self.grid[height][width].marked = not self.grid[height][width].marked
         self.marked.add((height, width))
+        self.hidden.discard((height, width))
         return True
 
     def pick_cell(self, width, height):
@@ -82,6 +86,7 @@ class MineSweeper:
         self.game_over = self.grid[height][width].value == -1
         self.grid[height][width].revealed = True
         self.revealed.add((height, width))
+        self.hidden.discard((height, width))
         if self.grid[height][width].value == 0:
             self.reveal_surrounding_empty_cells(width, height)
         return not self.game_over
@@ -97,6 +102,7 @@ class MineSweeper:
                         self.reveal_surrounding_empty_cells(width + w, height + h)
                     self.grid[height + h][width + w].revealed = True
                     self.revealed.add((height + h, width + w))
+                    self.hidden.discard((height + h, width + h))
 
     def game_loop(self):
         while not self.game_over:
@@ -137,7 +143,7 @@ class MineSweeper:
 
 
 if __name__ == "__main__":
-    m = MineSweeper(5,5,2)
+    m = MineSweeper()
     m.game_loop()
 
 

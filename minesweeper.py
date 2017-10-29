@@ -72,7 +72,7 @@ class MineSweeper:
             return False
         return True
 
-    def mark_cell(self, width, height):
+    def mark_cell(self, height, width):
         if not self.validate_cell(width, height):
             return False
         self.grid[height][width].marked = not self.grid[height][width].marked
@@ -80,7 +80,7 @@ class MineSweeper:
         self.hidden.discard((height, width))
         return True
 
-    def pick_cell(self, width, height):
+    def pick_cell(self, height, width):
         if not self.validate_cell(width, height):
             return False
         self.game_over = self.grid[height][width].value == -1
@@ -122,16 +122,16 @@ class MineSweeper:
                 print "Width of target cell?"
                 width = raw_input()
             if decision == "G":
-                self.pick_cell(int(width), int(height))
+                self.pick_cell(int(height), int(width))
             elif decision == "M":
-                self.mark_cell(int(width), int(height))
+                self.mark_cell(int(height), int(width))
             else:  # AI Decision
                 self.ai.mark_cells()
                 pick = self.ai.reveal_cell()
                 print pick
                 if pick:
                     height, width = pick
-                    self.pick_cell(width, height)
+                    self.pick_cell(height, width)
             if len(self.revealed) == self.total_non_mines:
                 break
 

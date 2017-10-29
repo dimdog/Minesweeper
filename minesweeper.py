@@ -1,4 +1,5 @@
 from random import Random
+from ai import MinesweeperAI
 random = Random()
 
 
@@ -18,13 +19,19 @@ class Cell:
 
 class MineSweeper:
 
-    def __init__(self, height=10, width=20, mines=99):
+    def __init__(self, height=16, width=30, mines=99):
         self.grid = []
+        self.mines = set()
+        self.revealed = set()
+        self.marked = set()
         self.game_over = False
+        self.height = height
+        self.width = width
         self.reset(height, width, mines)
+        self.total_non_mines = height * width - mines
+        self.ai = MinesweeperAI(self)
 
     def reset(self, height, width, mines):
-        grid_size = height * width
         self.grid = []
         self.game_over = False
         for h in xrange(height):
@@ -32,19 +39,21 @@ class MineSweeper:
             for w in xrange(width):
                 grid_row.append(Cell(0))
             self.grid.append(grid_row)
-
-        for i in xrange(mines):
-            mine_loc = random.randint(0, grid_size - 1)
-            mine_height = mine_loc / height
-            mine_width = (mine_loc - mine_height * height) % width
+        while len(self.mines) < mines:
+            mine_height = random.randint(0, height - 1)
+            mine_width = random.randint(0, width - 1)
             self.add_mine(mine_height, mine_width)
 
     def add_mine(self, mine_height, mine_width):
+        if (mine_height, mine_width) in self.mines:
+            return False
         self.grid[mine_height][mine_width].value = -1
         for h in xrange(-1, 2):  # -1 to 1
             for w in xrange(-1, 2):  # -1 to 1
                 if not (h == 0 and w == 0) and 0 <= mine_height + h < len(self.grid) and 0 <= mine_width + w < len(self.grid[0]):
                     self.grid[mine_height + h][mine_width + w].value += 1
+        self.mines.add((mine_height, mine_width))
+        return True
 
     def display_grid(self):
         print "Minesweeper"
@@ -64,6 +73,7 @@ class MineSweeper:
         if not self.validate_cell(width, height):
             return False
         self.grid[height][width].marked = not self.grid[height][width].marked
+        self.marked.add((height, width))
         return True
 
     def pick_cell(self, width, height):
@@ -71,6 +81,7 @@ class MineSweeper:
             return False
         self.game_over = self.grid[height][width].value == -1
         self.grid[height][width].revealed = True
+        self.revealed.add((height, width))
         if self.grid[height][width].value == 0:
             self.reveal_surrounding_empty_cells(width, height)
         return not self.game_over
@@ -85,33 +96,48 @@ class MineSweeper:
                         self.grid[height + h][width + w].revealed = True
                         self.reveal_surrounding_empty_cells(width + w, height + h)
                     self.grid[height + h][width + w].revealed = True
+                    self.revealed.add((height + h, width + w))
 
     def game_loop(self):
         while not self.game_over:
             self.display_grid()
-            print "Mark(M) or Guess(G)?"
+            print "Mark(M) or Guess(G) or AI Guess(A)?"
             decision = raw_input()
             decision = decision.upper()
-            if decision not in {"M", "G"}:
+            if decision not in {"M", "G", "A"}:
                 continue
             if decision == "M":
                 "Marking..."
             else:
                 "Guessing..."
-            print "Height of target cell?"
-            height = raw_input()
-            print "Width of target cell?"
-            width = raw_input()
+            if decision in {"M", "G"}:
+                print "Height of target cell?"
+                height = raw_input()
+                print "Width of target cell?"
+                width = raw_input()
             if decision == "G":
                 self.pick_cell(int(width), int(height))
-            else:
+            elif decision == "M":
                 self.mark_cell(int(width), int(height))
-        print "BOOM"
+            else:  # AI Decision
+                self.ai.mark_cells()
+                pick = self.ai.reveal_cell()
+                print pick
+                if pick:
+                    height, width = pick
+                    self.pick_cell(width, height)
+            if len(self.revealed) == self.total_non_mines:
+                break
+
+        if self.game_over:
+            print "BOOM"
+        else:
+            print "You Win!"
         self.display_grid()
 
 
 if __name__ == "__main__":
-    m = MineSweeper(5, 5, 1)
+    m = MineSweeper(5,5,2)
     m.game_loop()
 
 

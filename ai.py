@@ -54,14 +54,13 @@ class MinesweeperAI:
                 self.game.mark_cell(*location)
 
     def reveal_adjacency(self, info_a, mines_a, info_b, mines_b):
-        """ 'a' is guaranteed to have more unknowns and equal or greater mines than 'b'"""
+        """ 'a' is guaranteed to have more unknowns and equal or greater mines than 'b'
+        returns potential moves and potential bombs, both as sets"""
         a_unknowns = set(info_a['unknowns'])
-        b_unknowns = set(info_b['unknowns'])
-        if len(b_unknowns - a_unknowns) == 0:
-            difference = a_unknowns - b_unknowns
-            for location in difference:
-                print "Adjacency Guess: A Mines:{}\tB Mines:{}\n\tA Unknowns:{}\n\tB Unknowns{}".format(mines_a, mines_b, a_unknowns, b_unknowns)
-                return location
+        potential_bombs = set(info_b['unknowns'])
+        if len(potential_bombs - a_unknowns) == 0:
+            moves = a_unknowns - potential_bombs
+            return moves, potential_bombs
 
     def reveal_cell(self):
         """ picks a cell to reveal """
@@ -85,6 +84,8 @@ class MinesweeperAI:
                 else:
                     # check adjacents, try to see if we can be certain...
                     """ 'a' is guaranteed to have more unknowns and equal or greater mines than 'b'"""
+                    potential_moves = set()
+                    potential_bombs = set()
                     for adjacent in adjacents:
                         other_info = self.check_info(adjacent)
                         if len(other_info['unknowns']) == 0:
@@ -94,16 +95,25 @@ class MinesweeperAI:
                             other_mines = self.game.grid[adjacent[0]][adjacent[1]].value
                             other_remaining_mines = other_mines - len(other_info['marked'])
                             move = None
+                            p_moves = None
+                            p_bombs = None
                             if remaining_mines >= other_remaining_mines:
                                 if len(unknowns) > len(other_info['unknowns']):
-                                    move = self.reveal_adjacency(info, remaining_mines, other_info, other_remaining_mines)
+                                    p_moves, p_bombs = self.reveal_adjacency(info, remaining_mines, other_info, other_remaining_mines)
                                 elif len(unknowns) < len(other_info['unknowns']) and remaining_mines == other_remaining_mines:
-                                    move = self.reveal_adjacency(other_info, other_remaining_mines, info, remaining_mines)
+                                    p_moves, p_bombs = self.reveal_adjacency(other_info, other_remaining_mines, info, remaining_mines)
                             else:
                                 if len(unknowns) < len(other_info['unknowns']):
-                                    move = self.reveal_adjacency(other_info, other_remaining_mines, info, remaining_mines)
-                            if move:
-                                return move
+                                    p_moves, p_bombs = self.reveal_adjacency(other_info, other_remaining_mines, info, remaining_mines)
+                            if p_moves or p_bombs:
+                                potential_moves.update(p_moves)
+                                potential_bombs.update(p_bombs)
+
+                    safe_moves = potential_moves - potential_bombs
+                    if safe_moves:
+                        move = list(safe_moves)[0]
+                        print "Adjacency Guess:\n\tPotential moves:{}\n\tPotential bombs:{}\n\tMove:{}".format(potential_moves, potential_bombs, move)
+                        return move
 
                     # now we have to guess, lets see if we can make a good guess
                     odds = float(mines - len(marked)) / float(len(unknowns))

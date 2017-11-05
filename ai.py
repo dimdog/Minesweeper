@@ -6,6 +6,7 @@ class MinesweeperAI:
 
     def __init__(self, game):
         self.game = game
+        self.guessing = False
         self.completed = set()
 
     def mark_cells(self):
@@ -64,6 +65,7 @@ class MinesweeperAI:
         return None, None
 
     def reveal_cell(self):
+        self.guessing = False
         """ picks a cell to reveal """
         best_odds_dict = {}
         for location in self.game.revealed:
@@ -101,7 +103,7 @@ class MinesweeperAI:
                     if len(other_info['unknowns']) == 0:
                         self.completed.add(adjacent)
                     else:
-                        # print "\tA:{}\tB:{}".format(location, adjacent)
+                        print "\tA:{}\tB:{}".format(location, adjacent)
                         other_mines = self.game.grid[adjacent[0]][adjacent[1]].value
                         other_remaining_mines = other_mines - len(other_info['marked'])
                         move = None
@@ -122,7 +124,7 @@ class MinesweeperAI:
                 safe_moves = potential_moves - potential_bombs
                 if safe_moves:
                     move = list(safe_moves)[0]
-                    # print "Adjacency Guess:\n\tPotential moves:{}\n\tPotential bombs:{}\n\tMove:{}".format(potential_moves, potential_bombs, move)
+                    print "Adjacency Guess:\n\tPotential moves:{}\n\tPotential bombs:{}\n\tMove:{}".format(potential_moves, potential_bombs, move)
                     return move
 
                 # now we have to guess, lets see if we can make a good guess
@@ -135,7 +137,7 @@ class MinesweeperAI:
         mines_left = len(self.game.mines) - len(self.game.marked)
         squares_left = len(self.game.hidden)
         prob_per_square = float(mines_left) / float(squares_left)
-        # print "Odds: Mines left:{} Unknown Squares:{}, liklihood / square:{}".format(mines_left, squares_left, prob_per_square)
+        print "Odds: Mines left:{} Unknown Squares:{}, liklihood / square:{}".format(mines_left, squares_left, prob_per_square)
         # best odds we can have - short of 0 - is a 1 surrounded by 9 unknowns. - an 11% chance
         # random cell after picking first is 20% chance.
         best_odds_location = None
@@ -146,9 +148,10 @@ class MinesweeperAI:
                 best_odds = value
                 best_odds_location = (height, width)
         # if best_odds_location:
-            # print "Guessing {}, odds:{}".format(best_odds_location, best_odds)
+        #    print "Guessing {}, odds:{}".format(best_odds_location, best_odds)
         # else:
-            # print "Random Guess"
+        #    print "Random Guess"
+        self.guessing = True
         return best_odds_location or list(self.game.hidden)[random.randint(0, len(self.game.hidden) - 1)]
 
     def check_info(self, location):

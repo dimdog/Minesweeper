@@ -13,7 +13,7 @@ class Cell:
         if self.marked:
             return "M"
         if self.revealed:
-            if self.value == "-1":
+            if self.value == -1:
                 return "B"
             return str(self.value)
         return "?"
@@ -28,6 +28,7 @@ class MineSweeper:
         self.hidden = set()
         self.marked = set()
         self.game_over = False
+        self.victory = False
         self.height = height
         self.width = width
         self.reset(height, width, mines)
@@ -92,6 +93,7 @@ class MineSweeper:
         self.hidden.discard((height, width))
         if self.grid[height][width].value == 0:
             self.reveal_surrounding_empty_cells(height, width)
+        self.victory = not self.game_over and len(self.revealed) == self.total_non_mines
         return not self.game_over
 
     def reveal_surrounding_empty_cells(self, height, width):
@@ -132,10 +134,8 @@ class MineSweeper:
                 self.ai.mark_cells()
                 pick = self.ai.reveal_cell()
                 print pick
-                if pick:
-                    height, width = pick
-                    self.pick_cell(height, width)
-            if len(self.revealed) == self.total_non_mines:
+                self.pick_cell(*pick)
+            if self.victory:
                 break
 
         if self.game_over:

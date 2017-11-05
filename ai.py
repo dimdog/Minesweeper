@@ -10,7 +10,8 @@ class MinesweeperAI:
 
     def mark_cells(self):
         """ Marks any known bombs."""
-        marked = False
+        # print "Beginning Marking pass"
+        # print "\tCompleted RN:{}".format(self.completed)
         for location in self.game.revealed:
             # location = (height, width)
             if location not in self.completed:  # if we've already done all we can with the spot
@@ -20,27 +21,28 @@ class MinesweeperAI:
                 unknowns = info['unknowns']
                 adjacents = info['adjacents']
                 mines = self.game.grid[height][width].value
+                remaining_mines = mines - len(marked)
                 if len(unknowns) == 0:
                     # nothing to do
                     self.completed.add(location)
-                elif len(marked) + len(unknowns) == mines:
+                elif len(unknowns) == remaining_mines:
                     # if all the unknowns are mines
-                    marked = True
                     for target in unknowns:
                         self.game.mark_cell(*target)
                     self.completed.add(location)
-                else:  # check adjacnecy
-                    remaining_mines = mines - len(marked)
+                else:  # check adjacency
                     for adjacent in adjacents:
                         if adjacent not in self.completed:
                             other_info = self.check_info(adjacent)
-                            other_mines = self.game.grid[adjacent[0]][adjacent[1]].value
-                            other_remaining_mines = other_mines - len(other_info['marked'])
-                            if other_remaining_mines > remaining_mines:
-                                self.mark_adjacency(other_info, other_remaining_mines, info, remaining_mines)
-                            elif remaining_mines > other_remaining_mines:
-                                self.mark_adjacency(info, remaining_mines, other_info, other_remaining_mines)
-        return marked
+                            if len(other_info['unknowns']) == 0:
+                                self.completed.add(adjacent)
+                            else:
+                                other_mines = self.game.grid[adjacent[0]][adjacent[1]].value
+                                other_remaining_mines = other_mines - len(other_info['marked'])
+                                if other_remaining_mines > remaining_mines:
+                                    self.mark_adjacency(other_info, other_remaining_mines, info, remaining_mines)
+                                elif remaining_mines > other_remaining_mines:
+                                    self.mark_adjacency(info, remaining_mines, other_info, other_remaining_mines)
 
     def mark_adjacency(self, info_a, mines_a, info_b, mines_b):
         """ 'a' is guaranteed to have at least as many mines as 'b'"""
@@ -52,13 +54,14 @@ class MinesweeperAI:
                 self.game.mark_cell(*location)
 
     def reveal_adjacency(self, info_a, mines_a, info_b, mines_b):
-        """ 'a' is guaranteed to have more unknowns and equal mines to 'b'"""
+        """ 'a' is guaranteed to have more unknowns and equal or greater mines than 'b'"""
         a_unknowns = set(info_a['unknowns'])
         b_unknowns = set(info_b['unknowns'])
         if len(b_unknowns - a_unknowns) == 0:
             difference = a_unknowns - b_unknowns
             for location in difference:
-                return difference
+                print "Adjacency Guess: A Mines:{}\tB Mines:{}\n\tA Unknowns:{}\n\tB Unknowns{}".format(mines_a, mines_b, a_unknowns, b_unknowns)
+                return location
 
     def reveal_cell(self):
         """ picks a cell to reveal """
@@ -72,18 +75,35 @@ class MinesweeperAI:
                 unknowns = info['unknowns']
                 adjacents = info['adjacents']
                 mines = self.game.grid[height][width].value
+                remaining_mines = mines - len(marked)
                 if len(unknowns) == 0:
                     # nothing to do...
                     self.completed.add(location)
-                elif len(marked) == mines:
+                elif remaining_mines == 0:
                     # time to reveal some cells...
                     return unknowns[0]
                 else:
                     # check adjacents, try to see if we can be certain...
+                    """ 'a' is guaranteed to have more unknowns and equal or greater mines than 'b'"""
                     for adjacent in adjacents:
                         other_info = self.check_info(adjacent)
-
-                        pass
+                        if len(other_info['unknowns']) == 0:
+                            self.completed.add(adjacent)
+                        else:
+                            print "\tA:{}\tB:{}".format(location, adjacent)
+                            other_mines = self.game.grid[adjacent[0]][adjacent[1]].value
+                            other_remaining_mines = other_mines - len(other_info['marked'])
+                            move = None
+                            if remaining_mines >= other_remaining_mines:
+                                if len(unknowns) > len(other_info['unknowns']):
+                                    move = self.reveal_adjacency(info, remaining_mines, other_info, other_remaining_mines)
+                                elif len(unknowns) < len(other_info['unknowns']) and remaining_mines == other_remaining_mines:
+                                    move = self.reveal_adjacency(other_info, other_remaining_mines, info, remaining_mines)
+                            else:
+                                if len(unknowns) < len(other_info['unknowns']):
+                                    move = self.reveal_adjacency(other_info, other_remaining_mines, info, remaining_mines)
+                            if move:
+                                return move
 
                     # now we have to guess, lets see if we can make a good guess
                     odds = float(mines - len(marked)) / float(len(unknowns))

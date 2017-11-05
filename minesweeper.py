@@ -10,10 +10,12 @@ class Cell:
         self.marked = False
 
     def __repr__(self):
-        if self.revealed:
-            return str(self.value)
         if self.marked:
             return "M"
+        if self.revealed:
+            if self.value == "-1":
+                return "B"
+            return str(self.value)
         return "?"
 
 
@@ -60,12 +62,13 @@ class MineSweeper:
 
     def display_grid(self):
         print "Minesweeper"
+        print ("{}, " * (len(self.grid[0]) + 1)).format(0, *[c % 10 for c in xrange(len(self.grid[0]))])
         print "-" * 40
-        for row in self.grid:
-            print ("{}, " * len(row)).format(*[cell for cell in row])
+        for i, row in enumerate(self.grid):
+            print "{}| ".format(i % 10) + ("{}, " * (len(row))).format(*[cell for cell in row])
         print "-" * 40
 
-    def validate_cell(self, width, height):
+    def validate_cell(self, height, width):
         if height < 0 or height >= len(self.grid) or width < 0 or width >= len(self.grid[height]):
             return False
         if self.game_over or self.grid[height][width].revealed:
@@ -73,7 +76,7 @@ class MineSweeper:
         return True
 
     def mark_cell(self, height, width):
-        if not self.validate_cell(width, height):
+        if not self.validate_cell(height, width):
             return False
         self.grid[height][width].marked = not self.grid[height][width].marked
         self.marked.add((height, width))
@@ -81,17 +84,17 @@ class MineSweeper:
         return True
 
     def pick_cell(self, height, width):
-        if not self.validate_cell(width, height):
+        if not self.validate_cell(height, width):
             return False
         self.game_over = self.grid[height][width].value == -1
         self.grid[height][width].revealed = True
         self.revealed.add((height, width))
         self.hidden.discard((height, width))
         if self.grid[height][width].value == 0:
-            self.reveal_surrounding_empty_cells(width, height)
+            self.reveal_surrounding_empty_cells(height, width)
         return not self.game_over
 
-    def reveal_surrounding_empty_cells(self, width, height):
+    def reveal_surrounding_empty_cells(self, height, width):
         """ the gist is that the cell at width, height is a 0, so lets reveal all the cells around it.
         All the 0's it is touching get the same treatment """
         for h in xrange(-1, 2):  # -1 to 1
@@ -99,7 +102,7 @@ class MineSweeper:
                 if not (h == 0 and w == 0) and 0 <= height + h < len(self.grid) and 0 <= width + w < len(self.grid[0]):
                     if self.grid[height + h][width + w].value == 0 and not self.grid[height + h][width + w].revealed:
                         self.grid[height + h][width + w].revealed = True
-                        self.reveal_surrounding_empty_cells(width + w, height + h)
+                        self.reveal_surrounding_empty_cells(height + h, width + w)
                     self.grid[height + h][width + w].revealed = True
                     self.revealed.add((height + h, width + w))
                     self.hidden.discard((height + h, width + h))
@@ -143,7 +146,7 @@ class MineSweeper:
 
 
 if __name__ == "__main__":
-    m = MineSweeper()
+    m = MineSweeper(4, 4, 4)
     m.game_loop()
 
 

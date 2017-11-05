@@ -146,7 +146,7 @@ class MineSweeper:
 
 
 if __name__ == "__main__":
-    m = MineSweeper(4, 4, 4)
+    m = MineSweeper()
     m.game_loop()
 
 
